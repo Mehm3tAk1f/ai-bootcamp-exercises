@@ -31,8 +31,10 @@ def load_csv_manual(filepath: str) -> list[dict]:
 
     Example: [{"ticket_id": "1", "title": "Login issue", ...}, ...]
     """
-    # TODO: Implement using open() and csv module or manual parsing
-    pass
+    import csv 
+    with open(filepath, "r") as f:
+        data = list(csv.DictReader(f)) # Used DictReader because the first row is the header and we need dictionaries
+        return data
 
 
 def count_by_status(rows: list[dict]) -> dict:
@@ -40,8 +42,10 @@ def count_by_status(rows: list[dict]) -> dict:
     Count how many tickets are in each status (open, resolved, etc.).
     Return a dict like: {"open": 12, "resolved": 23}
     """
-    # TODO: Implement this function
-    pass
+    from collections import Counter
+    statuses = [row["status"] for row in rows] # goes through each row and receives the status of each ticket in a list
+    tickets_dict = Counter(statuses) # Counter counts each word and returns a dict with the word and the count
+    return tickets_dict
 
 
 def filter_by_priority(rows: list[dict], priority: str) -> list[dict]:
@@ -49,16 +53,25 @@ def filter_by_priority(rows: list[dict], priority: str) -> list[dict]:
     Return only rows matching the given priority (case-insensitive).
     Example: filter_by_priority(rows, "high") returns all high-priority tickets.
     """
-    # TODO: Implement this function
-    pass
+    tickets = []
+    for row in rows:
+        # turning strings lowercase for case-insensitive comparison
+        ticket_priority = row["priority"].lower()
+        if ticket_priority == priority.lower():
+            tickets.append(row)
+    return tickets
 
 
 def find_missing_descriptions(rows: list[dict]) -> list[str]:
     """
     Return ticket_ids where 'description' is empty or missing.
     """
-    # TODO: Implement this function
-    pass
+    ticket_ids = []
+    for row in rows:
+        if row["description"] is None or row["description"].strip() == "":
+            ticket_ids.append(row["ticket_id"])
+    return ticket_ids
+
 
 
 # ============================================================
@@ -68,8 +81,9 @@ def find_missing_descriptions(rows: list[dict]) -> list[str]:
 def load_data(filepath: str):
     """Load the CSV file and return a pandas DataFrame."""
     import pandas as pd
-    # TODO: Implement this function
-    pass
+
+    df = pd.read_csv(filepath)
+    return df
 
 
 def clean_data(df):
@@ -81,8 +95,18 @@ def clean_data(df):
 
     Return the cleaned DataFrame.
     """
-    # TODO: Implement this function
-    pass
+    import pandas as pd
+
+    new_df = df.copy()
+    not_null = new_df["description"].notna()
+    not_empty = new_df["description"].str.strip() != ""
+    new_df = new_df[not_empty & not_null]
+
+    new_df["priority"] = new_df["priority"].str.lower()
+
+    new_df["created_at"] = pd.to_datetime(new_df["created_at"])
+
+    return new_df
 
 
 def tickets_per_month(df) -> dict:
