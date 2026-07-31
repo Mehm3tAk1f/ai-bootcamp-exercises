@@ -49,8 +49,8 @@ def summarize_text(text: str) -> str:
     Use the LLM to generate a short summary (2-3 sentences) of the input text.
     Just call the LLM with a clear prompt and return the response.
     """
-    # TODO: Write a prompt and call call_llm()
-    pass
+    prompt = f"Summarize the following text with 2-3 sentences.\n\n{text}"
+    return call_llm(prompt)
 
 
 def classify_sentiment(text: str) -> str:
@@ -58,17 +58,16 @@ def classify_sentiment(text: str) -> str:
     Use the LLM to classify the sentiment of the text.
     Return one of: "positive", "neutral", "negative"
     """
-    # TODO: Write a prompt that returns only one word
-    pass
-
+    prompt = f"Classify the following text exactly 'positive', 'neutral', or 'negative' depending on the sentiment of the given text. Your answer must be one word.\n\n{text}"
+    return call_llm(prompt).lower().strip() # prevents answer from being capitalized and extra space
 
 def ask_question(text: str, question: str) -> str:
     """
     Given a text and a question, use the LLM to answer the question
     based only on the information in the text.
     """
-    # TODO: Implement basic Q&A with context
-    pass
+    prompt = f"Answer the given question, only according to the given text. If the answer is not in the text, say 'I don't know'\n\n{text}\n{question}"
+    return call_llm(prompt)
 
 
 # ============================================================
