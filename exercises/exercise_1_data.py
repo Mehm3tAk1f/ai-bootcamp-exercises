@@ -68,6 +68,7 @@ def find_missing_descriptions(rows: list[dict]) -> list[str]:
     """
     ticket_ids = []
     for row in rows:
+        #.       missing                          empty
         if row["description"] is None or row["description"].strip() == "":
             ticket_ids.append(row["ticket_id"])
     return ticket_ids
@@ -111,8 +112,10 @@ def clean_data(df):
 
 def tickets_per_month(df) -> dict:
     """Return the number of tickets created per month (as a dict or Series)."""
-    # TODO: Implement this function
-    pass
+
+    months = df["created_at"].dt.to_period("M") # converting the timestamp to month
+    counts = months.value_counts() # counting how many tickets there are in each month
+    return counts.sort_index()
 
 
 def avg_resolution_time_by_priority(df) -> dict:
@@ -120,14 +123,29 @@ def avg_resolution_time_by_priority(df) -> dict:
     Return the average resolution time (in hours) per priority level.
     Resolution time = resolved_at - created_at
     """
-    # TODO: Implement this function
-    pass
+    import pandas as pd
+    df = df.copy()
+    df["resolved_at"] = pd.to_datetime(df["resolved_at"])
+    resolved = df[df["status"] == "open"] # throwing away the open tickets
+
+    res_time_td = resolved["resolved_at"] - resolved["created_at"] # this is timedelta, needs to be converted to hours
+
+    hours = res_time_td.dt.total_seconds() / 3600
+    resolved["resolution_hours"] = hours
+    avg_time_by_priority = resolved.groupby("priority")["resolution_hours"].mean() # grouping the priorities and taking the mean of the res hours
+    return avg_time_by_priority
 
 
 def highest_unresolved_category(df) -> str:
     """Return the category with the highest percentage of unresolved tickets."""
-    # TODO: Implement this function
-    pass
+
+    import pandas as pd
+    df = df.copy()
+    total = df["category"].value_counts()
+    unresolved = df[df["status"] == "open"]["category"].value_counts()
+    percantage = unresolved.div(total, fill_value = 0)
+    return percantage.idxmax()
+
 
 
 # ============================================================
