@@ -141,9 +141,9 @@ def highest_unresolved_category(df) -> str:
 
     import pandas as pd
     df = df.copy()
-    total = df["category"].value_counts()
-    unresolved = df[df["status"] == "open"]["category"].value_counts()
-    percantage = unresolved.div(total, fill_value = 0)
+    total = df["category"].value_counts() # counting the total tickets per category
+    unresolved = df[df["status"] == "open"]["category"].value_counts() # counting the tickets which are still open by the category
+    percantage = unresolved.div(total, fill_value = 0) # divide unresolved by total, the result is between 1 and 0, not percantage
     return percantage.idxmax()
 
 

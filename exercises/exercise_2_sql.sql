@@ -16,18 +16,18 @@
 -- Query 1: List all employees sorted by name alphabetically.
 -- Expected columns: name, salary, hire_date
 
-
+SELECT name, salary, hire_date from employees ORDER BY name ASC;
 
 -- Query 2: List all employees with their department name.
 -- (Hint: you need to JOIN two tables)
 -- Expected columns: employee_name, department_name
 
-
+SELECT e.name AS employee_name, d.name AS department_name FROM employees e JOIN departments d ON e.department_id = d.id;
 
 -- Query 3: Count how many employees are in each department.
 -- Expected columns: department_name, employee_count
 
-
+SELECT d.name AS department_name, COUNT(e.id) AS employee_count FROM departments d JOIN employees e ON e.department_id = d.id GROUP BY department_name;
 
 -- ============================================================
 -- STANDARD LEVEL — JOINs, aggregations, filtering
