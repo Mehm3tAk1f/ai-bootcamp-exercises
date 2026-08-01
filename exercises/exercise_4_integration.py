@@ -32,14 +32,31 @@ def read_documents(folder: Path) -> list[dict]:
     Read all .txt files from the given folder.
     Return a list of dicts: [{"filename": str, "content": str}, ...]
     """
-    # TODO: Implement this function
-    pass
+    # findind the txt files in the folder
+    path = Path(folder)
+    files = list(path.glob("*.txt"))
+
+    # preparing the return list
+    files_list = []
+    filename = ""
+    text = ""
+
+    for file in files:
+        # filename and the content
+        filename = file.name
+        text = file.read_text()
+
+        # appending the dictionary with the name and the content to the list
+        files_list.append({"filename": filename, "content": text})
+
+    return files_list
 
 
 def word_count(text: str) -> int:
     """Return the number of words in a text."""
-    # TODO: Implement this function
-    pass
+
+    number = len(text.split())
+    return number
 
 
 def extract_keywords_simple(text: str, top_n: int = 5) -> list[str]:
@@ -48,8 +65,21 @@ def extract_keywords_simple(text: str, top_n: int = 5) -> list[str]:
     Exclude common stop words (the, a, is, in, of, and, to, for, etc.)
     Return as a list of lowercase words.
     """
-    # TODO: Implement without LLM — use word frequency
-    pass
+    # for removing the punctuations
+    import re
+
+    stop_words = ["the", "a", "is", "in", "of", "and", "to", "for", "because", "an", "as", "at", "but", "with", "are", "by", "that", "has"]
+    new_text = text.lower() # lowercase words for comparing correctly
+    clean_text = re.sub(r'[^\w\s]', '', new_text) # regex to remove punctuations
+
+    word_list = clean_text.split() # removing whitespaces
+    result = [word for word in word_list if word not in stop_words] # creating a word list with no stop words included
+    most_common_words_numbers = Counter(result).most_common(top_n) # most common words as tuples (word, frequency)
+
+    most_common_words = []
+    for word, number in most_common_words_numbers:
+        most_common_words.append(word)
+    return most_common_words
 
 
 def basic_stats(documents: list[dict]) -> dict:
@@ -61,8 +91,22 @@ def basic_stats(documents: list[dict]) -> dict:
     - shortest_doc: str (filename)
     - longest_doc: str (filename)
     """
-    # TODO: Implement this function
-    pass
+    total_documents = len(documents)
+
+    # dictionary with each filename and word count for each to easily find the min, max, and total
+    documents_dict = {document["filename"]: word_count(document["content"]) for document in documents}
+
+    total_words = sum(documents_dict.values())
+
+    avg_words_per_doc = total_words / total_documents
+
+    shortest_doc = min(documents_dict, key=documents_dict.get)
+
+    longest_doc = max(documents_dict, key=documents_dict.get)
+
+    result = {"total_documents": total_documents, "total_words": total_words, "avg_words_per_doc": avg_words_per_doc, "shortest_doc": shortest_doc, "longest_doc": longest_doc}
+
+    return result
 
 
 # ============================================================
