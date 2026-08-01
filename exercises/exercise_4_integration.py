@@ -120,8 +120,21 @@ def analyze_document(content: str) -> dict:
     - keywords: list[str] (3-5 keywords)
     - sentiment: str (positive/neutral/negative)
     """
-    # TODO: Implement LLM-based analysis
-    pass
+    prompt = f"""Analyze the given text and return JSON file output in the following format.
+summary: the summary of the text in one sentence,
+keywords: 3 to 5 keywords in a list,
+sentiment: choose one of the following options according to the given text; 'positive', 'neutral', 'negative'
+    
+Example output: {{"summary": "this is the summary", "keywords": ["some", "keywords"], "sentiment": "neutral"}}
+    
+Keys are in order: 'summary', 'keywords', 'sentiment'
+The output must be a JSON parseable, no description or markdown included.
+    
+TEXT:
+{content}
+    """
+    final_text = json.loads(call_llm(prompt))
+    return final_text
 
 
 def process_all_documents(documents: list[dict]) -> list[dict]:
@@ -129,14 +142,25 @@ def process_all_documents(documents: list[dict]) -> list[dict]:
     Process all documents and return enriched results.
     Each result should contain: filename, summary, keywords, sentiment.
     """
-    # TODO: Implement batch processing
-    pass
+    result = []
+    for document in documents:
+        text_dict = analyze_document(document["content"])
+        text_dict.update({"filename":document["filename"]})
+        result.append(text_dict)
+
+    return result
 
 
 def save_results(results: list[dict], output_path: Path) -> None:
     """Save results to a JSON file."""
-    # TODO: Implement output saving
-    pass
+
+    import os
+
+    # if file doesn't exist, mode = x, creates it; if file exists, mode = w, overwrites it
+    mode = "w" if os.path.isfile(output_path) else "x"
+    
+    with open(file=output_path, mode=mode) as f:
+        json.dump(results, f, indent=4) # indent 4 makes the output human readable
 
 
 def generate_report(results: list[dict]) -> str:
@@ -146,8 +170,28 @@ def generate_report(results: list[dict]) -> str:
     - Sentiment distribution (how many positive/neutral/negative)
     - Top 10 most common keywords across all documents
     """
-    # TODO: Implement report generation
-    pass
+    total_documents = len(results)
+
+    # dict to count sentiments
+    sentiment_dist = {"positive": 0, "neutral": 0, "negative": 0}
+
+    # list for keywords
+    keywords = []
+
+    # adding each sentiment to the dict and keywords to the list
+    for result in results:
+        sentiment_dist[result["sentiment"]] += 1
+        keywords.extend(result["keywords"])
+
+    most_common_words_tuple = Counter(keywords).most_common(10) # this returns most common words with the freq (word, number)
+    most_common_words = [word for word, number in most_common_words_tuple] # we just need the words
+
+    report = f"""
+Total documents processed: {total_documents}
+Sentiment distribution: {sentiment_dist.items()}
+Top 10 most common words: {', '.join(most_common_words)}"""
+
+    return report
 
 
 # ============================================================
