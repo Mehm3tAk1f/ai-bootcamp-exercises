@@ -86,20 +86,53 @@ def extract_company_info(text: str) -> list[dict]:
 
     Return a list of dictionaries with valid JSON-parseable output.
     """
-    # TODO: Implement LLM API call with appropriate prompt
-    pass
-
+    prompt = f"""In the given text, give me the followings for each company;
+    - company_name: str
+    - industry: str
+    - founded_year: int or None
+    - num_employees: int or None
+    - key_products: list[str]
+    Only return a JSON array, no markdown or description.
+    Do not make assumptions, use only the information given in the text.
+    TEXT:
+    {text}"""
+    resulting_json = call_llm(prompt) # storing the resulting json file from the llm call
+    return json.loads(resulting_json)
 
 def extract_with_prompt_v1(text: str) -> list[dict]:
     """First prompt approach for extraction."""
-    # TODO: Implement your first prompt strategy
-    pass
+    prompt = f"""According to the text, give me only JSON array output in the following format:
+    - company_name: str,
+    - industry: str,
+    - founded_year: int,
+    - num_employees: int,
+    - key_products: list[str]
+    TEXT:
+    {text}"""
+    resulting_json = call_llm(prompt)
+    return json.loads(resulting_json)
 
 
 def extract_with_prompt_v2(text: str) -> list[dict]:
     """Second prompt approach for extraction."""
-    # TODO: Implement your second prompt strategy
-    pass
+    prompt = f"""You are a deterministic information extraction system. Your outputs are always and only JSON arrays, no descriptions or markdowns.
+    Each object in the output must follow this format:
+    company_name: "string",
+    industry: "string",
+    founded_year: 2020,
+    num_employees: 100,
+    key_products: ["product1", "product2"]
+    
+    Use only the information given in the text, don't make assumptions. 
+    If the company_name or the industry is not given in the text, leave it empty string.
+    If the founded_year or the num_employees is not given in the text, leave it None.
+    If the key_products is not given in the text, leave it empty list.
+    
+    TEXT:
+    {text}
+    """
+    resulting_json = call_llm(prompt)
+    return json.loads(resulting_json)
 
 
 def compare_prompts(text: str) -> None:
@@ -107,8 +140,56 @@ def compare_prompts(text: str) -> None:
     Run both prompts and print a comparison.
     Explain which works better and why (print your explanation).
     """
-    # TODO: Implement comparison logic
-    pass
+    # try except in case the extraction fails
+    try:
+        prompt1_json = extract_with_prompt_v1(text)
+    except:
+        print("The first prompt extraction failed. Try again.")
+        prompt1_json = None
+    try:
+        prompt2_json = extract_with_prompt_v2(text)
+    except:
+        print("The second prompt extraction failed. Try again.")
+        prompt2_json = None
+    
+    # comparison table
+    w = 35 # width of each column
+    categories = ["company_name", "industry", "founded_year", "num_employees", "key_products"]
+
+    len_prompt1_json = len(prompt1_json) if prompt1_json is not None else 0
+    len_prompt2_json = len(prompt2_json) if prompt2_json is not None else 0
+    length = max(len_prompt1_json, len_prompt2_json, 5) # table will be the maximum of the two extraction, if they are too long it is limited to 5
+    for i in range(length):
+        row1 = ""
+        row2 = ""
+        for category in categories:
+            try:
+                prompt1_result = str(prompt1_json[i][category])
+            except:
+                prompt1_result = ""
+            row1 += f'{prompt1_result:<{w}}'
+
+            try:
+                prompt2_result = str(prompt2_json[i][category])
+            except:
+                prompt2_result = ""
+            row2 += f'{prompt2_result:<{w}}'
+        print(f'{"company_name_v1":<{w}}{"industry_v1":<{w}}{"founded_year_v1":<{w}}{"num_employees_v1":<{w}}{"key_products_v1":<{w}}')
+        print(row1)
+        print(f'{"company_name_v2":<{w}}{"industry_v2":<{w}}{"founded_year_v2":<{w}}{"num_employees_v2":<{w}}{"key_products_v2":<{w}}')
+        print(row2)
+        print()
+
+
+    # explanation
+    print(f"""\nAfter multiple tries, it is visible that both prompts are not fully reliable.
+The first prompt is not told what to do when the information is not given. It is more likely to hallucinate.
+Also it is told to give JSON file as the output, but it still fails sometimes during the extraction.
+On the other hand, the second prompt is more reliable to give correct format. However, the suprising part is, it is
+more likely to miss information given in the text. I belive it is too strict to prevent hallucination, and this 
+caused under extraction. At the end, the first prompt can extract everything, but can hallucinate or fail to extract. 
+The second prompt always extracts, but can under extract. It seems better to use the second prompt since it is 
+a safer option even though it can miss a few information given.""")
 
 
 # ============================================================
