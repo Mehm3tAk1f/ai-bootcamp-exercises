@@ -129,7 +129,7 @@ v1 was schema-only. I didn't mention what to do when the information is not give
 
 **Your approach:** _Describe what you did and why._
 
-I handled file I/O and pure-Python word-frequency keyword extraction. Later added LLM analysis per document. I saved it to a file and also created a report. I added fault tolerance and resumable incremental processing. I am still not done with the last function of the advanced level.
+I handled file I/O and pure-Python word-frequency keyword extraction. Later added LLM analysis per document. I saved it to a file and also created a report. I added fault tolerance and resumable incremental processing. I added a comparison report that clusters documents by keyword similarity and includes confidence notes about the analysis.
 
 
 **If you completed BASE:** How did you handle stop-word removal in keyword extraction? What list did you use and would you change it?
@@ -168,7 +168,7 @@ _These questions are about your experience doing the task, not the code itself._
 
 1. **What did you get stuck on longest?** Describe the specific moment — what you were trying to do, what went wrong, and how you got past it.
 
-I was stuck with the comparison between two prompts. I tried to make one prompt visibly better than the other one, like an upgrade. However, the second prompt did not extract all the information given in the text. The second prompt was an overkill for a simple task and I had to delete some parts of it to not make it too strict. On the other hand, I wanted the first prompt to cause hallucination. I didn't explain what to do if the information was not given. It still functioned suprisingly well. 
+I added a try/except inside analyze_document to catch failures and return an empty result instead of crashing. But this actually broke process_with_recovery, because I used analyze_document in this function and I need the failures as well. I only found this when I was checking the actual success_rate, and it always said 100% with zero errors, which was clearly wrong. That's why I removed the try/except so failures raise again, and process_with_recovery could catch and log them properly like it was supposed to.
 
 
 2. **What did you Google/search for during this task?** List 2–3 specific things you looked up.
@@ -178,7 +178,7 @@ I look up for the syntax and useful functions for my use. I googled how to use T
 
 3. **If you used AI tools (Copilot, ChatGPT, etc.), which parts did you use them for?** Be honest — this is not penalized. We want to understand your workflow.
 
-I used AI to seek help to solve the advanced levels. I use it as a mentor/reviewer to check my process and give me a hint when I am stuck. I wrote all my codes, it was used as a guidence.
+I used AI to seek help to solve the advanced levels. I use it as a mentor/reviewer to check my process, give me a hint when I am stuck, give me examples when I don't understand. I wrote all my codes, it was used as a guidence.
 
 
 ---
@@ -201,13 +201,13 @@ _Rate your current skill level honestly (1 = no experience, 5 = very confident):
 | Explaining technical concepts to others | [ ] | [ ] | [ ] | [X] | [ ] |
 
 **What is your strongest technical skill overall?**
-_ I am very comfortable with Python Programming
+_ I am very comfortable with Python Programming and SQL
 
 **What is the area you most want to improve during the bootcamp?**
 _ I would love to improve my prompt engineering skills, how to prepare production-ready pipelines
 
 **Have you built any personal or work projects before? If yes, briefly describe one:**
-_
+_I built a Product RAG Assistant. It gets a product catalog from an API and saves it locally as a CSV. Then I can search it with plain English instead of exact keywords. I used TF-IDF and cosine similarity for the search, and added an optional embeddings-based backend for synonym matching. It is an early project and has limitations.
 
 ---
 
