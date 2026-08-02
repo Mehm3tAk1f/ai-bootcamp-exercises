@@ -124,9 +124,9 @@ def avg_resolution_time_by_priority(df) -> dict:
     Resolution time = resolved_at - created_at
     """
     import pandas as pd
-    df = df.copy()
+    df = df.copy() # to not make changes to the original df
     df["resolved_at"] = pd.to_datetime(df["resolved_at"])
-    resolved = df[df["status"] == "open"] # throwing away the open tickets
+    resolved = df[df["status"] == "resolved"] # throwing away the open tickets
 
     res_time_td = resolved["resolved_at"] - resolved["created_at"] # this is timedelta, needs to be converted to hours
 
@@ -140,7 +140,6 @@ def highest_unresolved_category(df) -> str:
     """Return the category with the highest percentage of unresolved tickets."""
 
     import pandas as pd
-    df = df.copy()
     total = df["category"].value_counts() # counting the total tickets per category
     unresolved = df[df["status"] == "open"]["category"].value_counts() # counting the tickets which are still open by the category
     percantage = unresolved.div(total, fill_value = 0) # divide unresolved by total, the result is between 1 and 0, not percantage
@@ -158,8 +157,11 @@ def load_data_chunked(filepath: str, chunk_size: int = 1000):
     Simulate handling a file that doesn't fit in memory.
     Return the fully processed DataFrame.
     """
-    # TODO: Implement chunked reading
-    pass
+    import pandas as pd
+
+    chunks = pd.read_csv(filepath, chunksize=chunk_size)
+    df = pd.concat(chunks, ignore_index=True) # putting all chunks together
+    return df
 
 
 def detect_anomalies(df) -> list[dict]:
@@ -172,8 +174,44 @@ def detect_anomalies(df) -> list[dict]:
     Return a list of dicts describing each anomaly found:
     [{"ticket_id": ..., "issue": "resolved before created"}, ...]
     """
-    # TODO: Implement anomaly detection
-    pass
+    import pandas as pd
+
+    anomalies = []
+
+    # resolved_at earlier than created_at
+    df1 = df.copy()
+    df1["resolved_at"] = pd.to_datetime(df1["resolved_at"])
+    df1["created_at"] = pd.to_datetime(df1["created_at"])
+    df_check1 = df1[df1["resolved_at"] < df1["created_at"]]
+
+    # resolution time over 30 days
+    df2 = df.copy()
+    df2["resolved_at"] = pd.to_datetime(df2["resolved_at"])
+    res_time_td = df2["resolved_at"] - df2["created_at"]
+    days = res_time_td.dt.days
+    df_check2 = df2[days > 30]
+
+    # duplicate ticket titles from the same customer
+    df_check3 = df[df.duplicated(subset = ["customer_id", "title"], keep = False)]
+
+    # converting df to set for faster scanning
+    check1_ids = set(df_check1["ticket_id"])
+    check2_ids = set(df_check2["ticket_id"])
+    check3_ids = set(df_check3["ticket_id"])
+
+    for ticket_id in df["ticket_id"]:
+        issue = [] # storing all anomalies each ticket has
+        if ticket_id in check1_ids:
+            issue.append("resolved_at earlier than created_at")
+        if ticket_id in check2_ids:
+            issue.append("resolution time over 30 days")
+        if ticket_id in check3_ids:
+            issue.append("duplicate ticket titles from the same customer")
+
+        if issue:
+            anomalies.append({"ticket_id": ticket_id, "issue": issue})
+
+    return anomalies
 
 
 def generate_summary_report(df) -> str:
@@ -187,8 +225,52 @@ def generate_summary_report(df) -> str:
 
     Return as a formatted string.
     """
-    # TODO: Implement report generation
-    pass
+    # Total tickets, open vs resolved
+    total_tickets = count_by_status(df.to_dict(orient="records")) # turns df to dict
+    report = f"Total tickets: {sum(total_tickets.values())}, open: {total_tickets["open"]}, resolved: {total_tickets["resolved"]}\n"
+
+    # Busiest month
+    month_tickets = tickets_per_month(df)
+    busiest_month = month_tickets.idxmax()
+    report += f"Busiest month: {busiest_month}\n"
+
+    # Slowest category to resolve (similar to avg_resolution_time_by_priority)
+    slowest_category = slowest_category_func(df) 
+    report += f"Slowest category to resolve {slowest_category}\n"
+
+    # Top 3 customers by ticket count
+    customers = top_3_customers(df)
+    report += f"Top 3 customers by ticket count: {', '.join(customers)}\n"
+    
+    # Data quality score (% of rows with no issues)
+    anomalies_count = len(detect_anomalies(df))
+    total = len(df)
+    report += f"Data quality score: {(1-anomalies_count/total)*100:.2f}%"
+
+    return report
+
+# helper function
+def slowest_category_func(df) -> str:
+    """Slowest category to resolve (similar to avg_resolution_time_by_priority)"""
+    import pandas as pd
+    df = df.copy() # to not make changes to the original df
+    df["resolved_at"] = pd.to_datetime(df["resolved_at"])
+    resolved = df[df["status"] == "resolved"] # keeping only the resolved tickets
+    res_time_td = resolved["resolved_at"] - resolved["created_at"] # this is timedelta
+
+    time = res_time_td.dt.total_seconds()
+    resolved["time"] = time
+    avg_time_by_category = resolved.groupby("category")["time"].mean()
+    slowest_category = avg_time_by_category.idxmax()
+    return slowest_category
+
+# helper
+def top_3_customers(df) -> list:
+    import pandas as pd
+    from collections import Counter
+    customers = df["customer_id"].tolist()
+    top_3 = [item for item, count in Counter(customers).most_common(3)]
+    return top_3
 
 
 # ============================================================
