@@ -188,7 +188,7 @@ def generate_report(results: list[dict]) -> str:
 
     report = f"""
 Total documents processed: {total_documents}
-Sentiment distribution: {sentiment_dist.items()}
+Sentiment distribution: {sentiment_dist["positive"]} positives, {sentiment_dist["neutral"]} neutrals, {sentiment_dist["negative"]} negatives
 Top 10 most common words: {', '.join(most_common_words)}"""
 
     return report
@@ -264,8 +264,55 @@ def generate_comparison_report(results: list[dict]) -> str:
     - Topic clusters (group documents by dominant keyword overlap)
     - Confidence notes (which analyses might be unreliable and why?)
     """
-    # TODO: Implement advanced reporting
-    pass
+    from itertools import combinations
+
+    threshold = 0.15  # jaccard similarity cutoff for two docs to count as linked
+
+    # document similarity: jaccard score (intersection / union) for every pair of docs
+    similarity_lines = []
+    edges = []  # pairs of filenames whose similarity clears the threshold
+    for doc1, doc2 in combinations(results, 2):
+        kw1, kw2 = set(doc1["keywords"]), set(doc2["keywords"])
+        if not kw1 or not kw2:
+            continue  # skip docs with no keywords, division by zero otherwise
+        score = len(kw1 & kw2) / len(kw1 | kw2)
+        if score > 0:
+            similarity_lines.append(f"  {doc1['filename']} <-> {doc2['filename']}: {score:.2f}")
+        if score > threshold:
+            edges.append((doc1["filename"], doc2["filename"]))
+
+    # topic clusters: start with every document in its own cluster, then merge
+    # clusters together whenever two linked documents end up in different ones
+    clusters = [[doc["filename"]] for doc in results]
+    for f1, f2 in edges:
+        cluster1 = None
+        cluster2 = None
+        for cluster in clusters:
+            if f1 in cluster:
+                cluster1 = cluster
+            if f2 in cluster:
+                cluster2 = cluster
+        if cluster1 is not cluster2:
+            cluster1.extend(cluster2)
+            clusters.remove(cluster2)
+
+    cluster_lines = [f"  cluster {i}: {cluster}" for i, cluster in enumerate(clusters)]
+
+    # confidence notes: flag thin extractions, plus a general LLM non-determinism caveat
+    confidence_lines = []
+    for doc in results:
+        if len(doc.get("keywords", [])) < 3:
+            confidence_lines.append(f"  {doc['filename']}: only {len(doc['keywords'])} keywords extracted, analysis may be thin")
+    confidence_lines.append("  LLM-generated analysis is not deterministic; re-running may produce different results")
+
+    report = "Document similarity (jaccard score on keywords):\n"
+    report += "\n".join(similarity_lines) if similarity_lines else "  no overlapping keywords found between any documents"
+    report += "\n\nTopic clusters:\n"
+    report += "\n".join(cluster_lines)
+    report += "\n\nConfidence notes:\n"
+    report += "\n".join(confidence_lines)
+
+    return report
 
 
 # ============================================================
