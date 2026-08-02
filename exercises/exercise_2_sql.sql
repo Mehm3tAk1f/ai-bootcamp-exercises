@@ -57,16 +57,20 @@ SELECT d.name AS department_name, COUNT(p.id) AS active_project_count FROM depar
 --          with at least one completed project.
 -- Expected columns: employee_name, department_name, hire_date
 
-
+SELECT e.name AS employee_name, d.name AS department_name, e.hire_date AS hire_date FROM employees e JOIN departments d ON e.department_id = d.id WHERE e.department_id IN
+(SELECT d.id FROM departments d LEFT JOIN projects p ON d.id = p.department_id GROUP BY d.id HAVING SUM(p.status = "completed") >= 1) AND DATE('now', '-12 months') <= e.hire_date;
 
 -- Query 8: Rank departments by their "project success rate"
 --          (completed projects / total projects). Exclude departments with no projects.
 -- Expected columns: department_name, total_projects, completed_projects, success_rate
 
-
+SELECT d.name AS department_name, COUNT(p.status) AS total_projects, SUM(p.status = "completed") AS completed_projects, CAST(SUM(p.status = "completed") AS FLOAT) / COUNT(p.status) * 100 AS success_rate
+    FROM departments d JOIN projects p ON p.department_id = d.id GROUP BY department_name ORDER BY success_rate DESC;
 
 -- Query 9: For each department, find the employee with the highest salary.
 --          If multiple employees tie, show all of them.
 -- Expected columns: department_name, employee_name, salary
 
-
+SELECT d.name AS department_name, e.name AS employee_name, e.salary AS salary FROM departments d JOIN employees e ON d.id = e.department_id
+    JOIN (SELECT e.department_id AS department_id, MAX(e.salary) AS max_salary FROM employees e JOIN departments d ON e.department_id = d.id GROUP BY e.department_id) n ON n.department_id = e.department_id
+        WHERE e.department_id = n.department_id AND e.salary = n.max_salary;
