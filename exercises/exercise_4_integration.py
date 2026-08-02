@@ -211,8 +211,25 @@ def process_with_recovery(documents: list[dict]) -> dict:
         "success_rate": float
     }
     """
-    # TODO: Implement fault-tolerant processing
-    pass
+    result_dict = {"results": [], "errors": [], "success_rate": float}
+    for document in documents:
+        results = []
+        errors = []
+        try:
+            document_result = process_all_documents([document])[0]
+            results.append(document_result)
+            result_dict["results"] += results
+        except:
+            try:
+                document_result = process_all_documents([document])[0]
+                results.append(document_result)
+                result_dict["results"] += results
+            except Exception as e:
+                errors.append({"filename": document["filename"], "error": e})
+                result_dict["errors"] += errors
+    rate = len(result_dict["results"]) / len(documents) * 100
+    result_dict["success_rate"] = rate
+    return result_dict
 
 
 def incremental_processing(documents: list[dict], output_path: Path) -> list[dict]:
@@ -225,8 +242,19 @@ def incremental_processing(documents: list[dict], output_path: Path) -> list[dic
 
     Return the complete results (existing + new).
     """
-    # TODO: Implement incremental/resumable processing
-    pass
+    new_file = []
+    if not Path.exists(output_path):
+        new_file = process_all_documents(documents)
+    else:
+        text_in_file = json.loads(output_path.read_text()) # list of dict
+        file_names = [file_dict["filename"] for file_dict in text_in_file] # extracting filenames from each dict
+        for document in documents:
+            if document["filename"] not in file_names:
+                new_file.append(process_all_documents([document])[0])
+        new_file.extend(text_in_file)
+
+    save_results(new_file,output_path)
+    return new_file
 
 
 def generate_comparison_report(results: list[dict]) -> str:

@@ -58,7 +58,7 @@ def classify_sentiment(text: str) -> str:
     Use the LLM to classify the sentiment of the text.
     Return one of: "positive", "neutral", "negative"
     """
-    prompt = f"Classify the following text exactly 'positive', 'neutral', or 'negative' depending on the sentiment of the given text. Your answer must be one word.\n\n{text}"
+    prompt = f"Classify the following text exactly one word lowercase 'positive', 'neutral', or 'negative' depending on the sentiment of the given text. Your answer must be one word.\n\n{text}"
     return call_llm(prompt).lower().strip() # prevents answer from being capitalized and extra space
 
 def ask_question(text: str, question: str) -> str:
