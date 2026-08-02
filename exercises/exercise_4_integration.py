@@ -227,7 +227,7 @@ def process_with_recovery(documents: list[dict]) -> dict:
             except Exception as e:
                 errors.append({"filename": document["filename"], "error": e})
                 result_dict["errors"] += errors
-    rate = len(result_dict["results"]) / len(documents) * 100
+    rate = len(result_dict["results"]) / len(documents)
     result_dict["success_rate"] = rate
     return result_dict
 
